@@ -4,10 +4,17 @@ from OpenGL.GLU import *
 
 class Camera:
     def __init__(self):
-        self.distance = 50.0  # Orbit zoom distance
-        self.pitch = 30.0     # Elevation angle
-        self.yaw = 0.0        # Azimuth angle
+        self.distance = 50.0        # Active animated distance tracking
+        self.target_distance = 50.0 # Goal interpolation distance
+        self.pitch = 30.0           # Elevation angle
+        self.yaw = 0.0              # Azimuth angle
         self.target = [0.0, 0.0, 0.0]
+
+    def update(self):
+        """ Evaluates smoothing interpolations. Designed to avoid abrupt camera visual jumps 
+            when targeting bodies of varied sizes or vastly separated orbital distances. """
+        # 1. Smooth interpolation applied to camera boom length setup
+        self.distance += (self.target_distance - self.distance) * 0.08
 
     def apply(self):
         glLoadIdentity()

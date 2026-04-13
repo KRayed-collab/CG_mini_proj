@@ -18,8 +18,8 @@ class SolarSystemApp:
         self.screen = pygame.display.set_mode(self.display, DOUBLEBUF | OPENGL)
         pygame.display.set_caption("Extended 3D Solar System (Multi-module refactored)")
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.SysFont("Consolas", 16)
-        self.title_font = pygame.font.SysFont("Consolas", 20, bold=True)
+        self.font = pygame.font.SysFont("Consolas", 15)
+        self.title_font = pygame.font.SysFont("Consolas", 19, bold=True)
         
         # Execution states
         self.is_running = True
@@ -28,6 +28,7 @@ class SolarSystemApp:
         self.orthographic_mode = False
         self.sim_speed = 1.0
         self.is_paused = False
+        self.invert_controls = False # Option to invert Mouse Dragging behaviors
         
         # User manipulation parameters
         self.selected_planet = None
@@ -56,18 +57,103 @@ class SolarSystemApp:
         glEnable(GL_COLOR_MATERIAL)
         
     def build_solar_system(self):
-        self.sun = Planet("Sun", 3.0, 0, 0, 0.5, (1, 0.8, 0.1))
-        mercury = Planet("Mercury", 0.4, 6.0, 4.0, 1.0, (0.7, 0.7, 0.7), self.sun)
-        venus = Planet("Venus", 0.8, 9.0, 2.5, 0.8, (0.9, 0.7, 0.4), self.sun)
-        earth = Planet("Earth", 1.0, 13.0, 1.5, 2.0, (0.2, 0.4, 0.9), self.sun)
-        moon = Planet("Moon", 0.25, 2.0, 5.0, 3.0, (0.8, 0.8, 0.8), earth)
-        mars = Planet("Mars", 0.6, 18.0, 1.2, 1.9, (0.9, 0.3, 0.1), self.sun)
-        jupiter = Planet("Jupiter", 2.2, 26.0, 0.6, 4.0, (0.8, 0.6, 0.5), self.sun)
-        saturn = Planet("Saturn", 1.8, 35.0, 0.4, 3.5, (0.9, 0.8, 0.4), self.sun)
-        uranus = Planet("Uranus", 1.3, 44.0, 0.2, 2.5, (0.5, 0.8, 0.9), self.sun)
-        neptune = Planet("Neptune", 1.2, 53.0, 0.1, 2.5, (0.2, 0.4, 0.9), self.sun)
+        # Spatially extending the distance spreads dramatically to avoid orbital line congestion natively.
+        # Rich 4-line descriptors baked comprehensively into each model's instantiation.
+        self.sun = Planet("Sun", 3.0, 0, 0, 0.5, (1, 0.8, 0.1), description=[
+            "Center of the Solar System.", 
+            "Contains roughly 99.8% of the system's mass.", 
+            "Generates energy via thermonuclear fusion.", 
+            "Surface temperature is an intense 5,500 Celsius."
+        ])
         
-        self.flattened_celestials = [self.sun, mercury, venus, earth, moon, mars, jupiter, saturn, uranus, neptune]
+        mercury = Planet("Mercury", 0.4, 12.0, 4.0, 1.0, (0.7, 0.7, 0.7), self.sun, description=[
+            "Closest planet to the Sun.", 
+            "Lacks an atmosphere to retain any heat.", 
+            "Features a densely cratered, rocky surface.", 
+            "Orbital period lasts only 88 Earth days."
+        ])
+        
+        venus = Planet("Venus", 0.8, 18.0, 2.5, 0.8, (0.9, 0.7, 0.4), self.sun, description=[
+            "Second planet from the Sun.", 
+            "Possesses a thick, toxic atmosphere consisting of CO2.", 
+            "Hottest planet inherently due to a runaway greenhouse effect.", 
+            "Strangely rotates backwards compared to other planets."
+        ])
+        
+        earth = Planet("Earth", 1.0, 26.0, 1.5, 2.0, (0.2, 0.4, 0.9), self.sun, description=[
+            "Third planet from the Sun.", 
+            "The only known planetary body actively holding life.", 
+            "Liquid water oceans blanket roughly 71% of its surface.", 
+            "Breathable atmosphere is rich in nitrogen and oxygen."
+        ])
+        
+        # Adding Moon natively
+        moon = Planet("Moon", 0.25, 2.0, 5.0, 3.0, (0.8, 0.8, 0.8), earth, description=[
+            "Earth's solely natural satellite.", 
+            "Gravitational pull effectively regulates Earth's tides.", 
+            "Surface is eternally covered in ancient meteor craters.", 
+            "Synchronous rotation locks one face permanently to Earth."
+        ])
+        
+        mars = Planet("Mars", 0.6, 35.0, 1.2, 1.9, (0.9, 0.3, 0.1), self.sun, description=[
+            "Fourth planet, traditionally known as the 'Red Planet'.", 
+            "Operates as a dusty, terribly cold desert world.", 
+            "Home to Olympus Mons, the largest volcano in the system.", 
+            "Thin atmospheric remnants imply past massive liquid lakes."
+        ])
+        
+        jupiter = Planet("Jupiter", 2.2, 55.0, 0.6, 4.0, (0.8, 0.6, 0.5), self.sun, description=[
+            "Fifth planet, classified as the largest gas giant.", 
+            "Hosts the Great Red Spot—a storm raging for centuries.", 
+            "Entirely lacks a solid planetary surface.", 
+            "Boasts a massive, incredibly complex system of 90+ moons."
+        ])
+        
+        # Jupiter's Galilean Moons precisely spaced and articulated
+        io = Planet("Io", 0.2, 3.0, 6.0, 5.0, (0.9, 0.8, 0.2), jupiter, description=["Innermost Galilean moon.", "Most volcanically active body recognized in the system.", "Surface constantly repainted from massive magma features.", "Locked in a perpetual gravitational tug-of-war."])
+        europa = Planet("Europa", 0.18, 4.0, 4.0, 4.0, (0.8, 0.9, 0.9), jupiter, description=["Second Galilean moon.", "Incredibly smooth icy surface covers a vast subsurface ocean.", "A prime planetary candidate for hosting extraterrestrial life.", "Surface displays beautiful tectonic-like fracturing."])
+        ganymede = Planet("Ganymede", 0.3, 5.5, 3.0, 3.0, (0.6, 0.6, 0.6), jupiter, description=["The largest categorized moon in the solar system.", "Actually volumetrically bigger than the planet Mercury.", "Distinctively generates its own independent magnetic field.", "Features mixing dark ancient regions alongside bright young ones."])
+        callisto = Planet("Callisto", 0.25, 7.0, 2.0, 2.0, (0.5, 0.5, 0.5), jupiter, description=["Outermost Galilean moon belonging to Jupiter.", "Arguably the most heavily cratered object sitting in the system.", "Considered a geologically inactive, cold dead world.", "Contains extreme natural radiation shielding organically."])
+        
+        saturn = Planet("Saturn", 1.8, 75.0, 0.4, 3.5, (0.9, 0.8, 0.4), self.sun, description=[
+            "Sixth planet, revered as the ringed jewel.", 
+            "Possesses an exceptionally prominent icy ring subsystem.", 
+            "Composed mostly of raw hydrogen and helium gas.", 
+            "Functions as the least dense planet overall natively."
+        ])
+        
+        # Saturn's dominant moon
+        titan = Planet("Titan", 0.3, 4.0, 4.0, 4.0, (0.8, 0.7, 0.3), saturn, description=[
+            "Saturn's largest independent satellite.", 
+            "The sole moon confirmed holding a dense, completely opaque atmosphere.", 
+            "Uniquely features stable liquid methane lakes on its surface.", 
+            "Atmosphere is comprised overwhelmingly of thick nitrogen."
+        ])
+        
+        uranus = Planet("Uranus", 1.3, 95.0, 0.2, 2.5, (0.5, 0.8, 0.9), self.sun, description=[
+            "Seventh planet, commonly designated as an ice giant.", 
+            "Strangely rotates directly on its structural side (98 degree tilt).", 
+            "Harbors an extremely cold baseline planetary atmosphere.", 
+            "Surrounded by thin, remarkably faint dark orbital rings."
+        ])
+        
+        neptune = Planet("Neptune", 1.2, 110.0, 0.1, 2.5, (0.2, 0.4, 0.9), self.sun, description=[
+            "Eighth planet, representing the farthest major body out.", 
+            "Operates as a dark, cold world whipped natively by supersonic winds.", 
+            "Vivid blue coloration stems directly from atmospheric methane gas.", 
+            "Takes an immense 165 years to definitively orbit the Sun."
+        ])
+        
+        # Explicit context-locking separations fulfilling requirement
+        self.major_planets = [self.sun, mercury, venus, earth, mars, jupiter, saturn, uranus, neptune]
+        
+        self.flattened_celestials = []
+        for p in self.major_planets:
+            self.flattened_celestials.append(p)
+            for m in p.moons:
+                self.flattened_celestials.append(m)
+                
+        # Kick off programmatic textures securely
         for p in self.flattened_celestials:
             p.generate_texture()
 
@@ -77,7 +163,7 @@ class SolarSystemApp:
         
         if self.orthographic_mode:
             aspect = self.display[0]/self.display[1]
-            scale = self.camera.distance / 1.5
+            scale = self.camera.target_distance / 1.5
             glOrtho(-scale*aspect, scale*aspect, -scale, scale, -200, 200)
         else:
             gluPerspective(45, (self.display[0]/self.display[1]), 0.1, 500.0)
@@ -89,19 +175,15 @@ class SolarSystemApp:
             return
             
         ray_origin, ray_dir = unproject_mouse(mx, my)
-        # Assuming orbital alignment natively sits on the world Y=0 XZ plane model
         intersect_pt = ray_plane_intersect(ray_origin, ray_dir, plane_y=0.0)
         
         if intersect_pt:
-            # Map intersection distances onto positional hierarchy
             parent_pos = self.dragging_planet.parent.get_world_position()
             
             dx = intersect_pt[0] - parent_pos[0]
-            dz = parent_pos[2] - intersect_pt[2] # Flip mapping aligned to our geometry rule built within get_world_position()
+            dz = parent_pos[2] - intersect_pt[2] 
             
-            # Snap orbital properties immediately matching exact absolute spatial mapping 
             new_distance = math.sqrt(dx**2 + dz**2)
-            # Prevent pushing into collision threshold structure
             self.dragging_planet.orbit_distance = max(self.dragging_planet.parent.radius + self.dragging_planet.radius, new_distance)
             self.dragging_planet.current_orbit_angle = math.degrees(math.atan2(dz, dx))
 
@@ -121,6 +203,8 @@ class SolarSystemApp:
         while self.is_running:
             dt = self.clock.tick(60) / 1000.0 
             
+            self.camera.update() # Proc evaluation easing models continually
+            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.is_running = False
@@ -130,18 +214,19 @@ class SolarSystemApp:
                         picked = self.pick_planet(*event.pos)
                         if picked:
                             self.selected_planet = picked
+                            # Map focal sizing naturally resolving UX requirement
+                            self.camera.target_distance = max(15, picked.radius * 9)
+                            
                             if picked != self.sun and picked.parent:
                                 self.dragging_planet = picked
-                                # Immediately trigger snap physics
                                 self.handle_planet_drag(*event.pos)
                         else:
-                            # Releasing selection by clicking empty space
                             self.selected_planet = None
                     elif event.button == 4:
-                        self.camera.distance = max(10, self.camera.distance - 4.0)
+                        self.camera.target_distance = max(5.0, self.camera.target_distance - 4.0)
                         if self.orthographic_mode: self.update_projection()
                     elif event.button == 5:
-                        self.camera.distance = min(200, self.camera.distance + 4.0)
+                        self.camera.target_distance = min(200.0, self.camera.target_distance + 4.0)
                         if self.orthographic_mode: self.update_projection()
                         
                 elif event.type == pygame.MOUSEBUTTONUP:
@@ -152,12 +237,12 @@ class SolarSystemApp:
                 elif event.type == pygame.MOUSEMOTION:
                     if mouse_down:
                         if self.dragging_planet:
-                            # Drag handling mapped strictly to XYZ intersect spatial grid
                             self.handle_planet_drag(*event.pos)
                         else:
-                            # General Free-Cam rotation
-                            self.camera.yaw += event.rel[0] * 0.5
-                            self.camera.pitch -= event.rel[1] * 0.5
+                            # Apply configurable inversion parameter strictly to view-pitch scaling
+                            inv = -1 if self.invert_controls else 1
+                            self.camera.yaw += event.rel[0] * 0.5 * inv
+                            self.camera.pitch -= event.rel[1] * 0.5 * inv
                             self.camera.pitch = max(-89, min(89, self.camera.pitch))
 
                 elif event.type == pygame.KEYDOWN:
@@ -174,19 +259,33 @@ class SolarSystemApp:
                     elif event.key == pygame.K_p:
                         self.orthographic_mode = not self.orthographic_mode
                         self.update_projection()
+                    elif event.key == pygame.K_i:
+                        self.invert_controls = not self.invert_controls
                     elif event.key == pygame.K_TAB:
-                        if not self.selected_planet:
-                            self.selected_planet = self.flattened_celestials[0]
+                        # Iterate EXCLUSIVELY on standard explicit planets avoiding moon congestion
+                        if not self.selected_planet or self.selected_planet not in self.major_planets:
+                            self.selected_planet = self.major_planets[0]
+                            self.camera.target_distance = max(15, self.selected_planet.radius * 9)
                         else:
-                            idx = self.flattened_celestials.index(self.selected_planet)
-                            self.selected_planet = self.flattened_celestials[(idx+1) % len(self.flattened_celestials)]
+                            idx = self.major_planets.index(self.selected_planet)
+                            self.selected_planet = self.major_planets[(idx+1) % len(self.major_planets)]
+                            self.camera.target_distance = max(15, self.selected_planet.radius * 9)
+                    elif event.key == pygame.K_m:
+                        # Secondary cycling exclusively to swap through moons of the contextual target
+                        if self.selected_planet and self.selected_planet.parent in self.major_planets:
+                            siblings = self.selected_planet.parent.moons
+                            idx = siblings.index(self.selected_planet)
+                            self.selected_planet = siblings[(idx+1) % len(siblings)]
+                            self.camera.target_distance = max(15, self.selected_planet.radius * 9)
+                        elif self.selected_planet and len(self.selected_planet.moons) > 0:
+                            # Contextual root holds moons; drop down into children
+                            self.selected_planet = self.selected_planet.moons[0]
+                            self.camera.target_distance = max(15, self.selected_planet.radius * 9)
                     elif event.key == pygame.K_c:
                          self.selected_planet = None
             
-            # --- Temporal Animation Scaling ---
             if not self.is_paused:
                 for c in self.flattened_celestials:
-                    # Skip angle iteration on dynamically locked bodies holding state
                     if c != self.dragging_planet:
                         c.current_orbit_angle += c.orbit_speed * self.sim_speed * dt * 10
                     c.current_rotation_angle += c.rotation_speed * self.sim_speed * dt * 20
@@ -215,7 +314,8 @@ class SolarSystemApp:
         glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 0.0, 0.0, 1.0])
         glPopMatrix()
         
-        self.sun.draw(self.show_orbits, self.lighting_enabled)
+        # Injects the active context target deeper into the pipeline allowing unique highlighting configurations mapped explicitly
+        self.sun.draw(self.show_orbits, self.lighting_enabled, active_selection=self.selected_planet)
         self.render_ui()
         
     def render_ui(self):
@@ -238,33 +338,45 @@ class SolarSystemApp:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         
         self.draw_text(15, 15, "Controls: Mouse Drag=Rotate Camera | Scroll=Zoom", (200, 200, 200))
-        self.draw_text(15, 35, "Select: Click Planet or hit TAB. Drag planet directly to move it mapping orbit.", (200, 200, 200))
-        self.draw_text(15, 55, "Toggles: [P]rojection | [L]ighting | [O]rbits | [SPACE] Pause | Up/Down=Speed", (200, 200, 200))
+        self.draw_text(15, 35, "Select: Click Body | [TAB] Cycle Planets | [M] Cycle Moons", (200, 200, 200))
+        self.draw_text(15, 55, "Toggles: [P]rojection | [L]ighting | [O]rbits | [SPACE] Pause", (200, 200, 200))
         
         self.draw_text(15, 90, f"Mode: {'Orthographic' if self.orthographic_mode else 'Perspective'}", (255, 230, 200))
         self.draw_text(15, 110, f"Speed: {self.sim_speed}x {'(PAUSED)' if self.is_paused else ''}", (255, 230, 200))
+        self.draw_text(15, 130, f"Controls [I]: {'Inverted' if self.invert_controls else 'Standard'}", (255, 230, 200))
             
-        # Draw Planet Information Detail HUD explicitly when targeted
+        # Draw explicit, highly detailed Planet Information Panel
         if self.selected_planet:
-             panel_x = w - 300
-             panel_y = h - 180
+             # Widened bounds adapting formatting naturally around heavier descriptive texts mapped to parameters
+             panel_w_offset = 380
+             panel_h_offset = 240
+             panel_x = w - panel_w_offset
+             panel_y = h - panel_h_offset
              
-             # Subdued background box
-             glColor4f(0.0, 0.0, 0.1, 0.6)
+             glColor4f(0.0, 0.0, 0.1, 0.75) # Darker, readable opacity boundary box mapping
              glBegin(GL_QUADS)
-             glVertex2f(panel_x - 10, panel_y - 10)
-             glVertex2f(w - 10, panel_y - 10)
+             glVertex2f(panel_x - 15, panel_y - 15)
+             glVertex2f(w - 10, panel_y - 15)
              glVertex2f(w - 10, h - 10)
-             glVertex2f(panel_x - 10, h - 10)
+             glVertex2f(panel_x - 15, h - 10)
              glEnd()
              
              p = self.selected_planet
              self.draw_text(panel_x, panel_y, f">> {p.name.upper()} <<", (100, 255, 150), is_title=True)
-             self.draw_text(panel_x, panel_y + 30, f"- Core Radius:   {p.radius:.2f} kM", (200, 255, 220))
-             self.draw_text(panel_x, panel_y + 55, f"- Orbit Status:  {p.orbit_distance:.2f} AU", (200, 255, 220))
-             self.draw_text(panel_x, panel_y + 80, f"- Orbit Vel:     {p.orbit_speed:.2f} yr/s", (200, 255, 220))
-             self.draw_text(panel_x, panel_y + 105, f"- Rotation Vel:  {p.rotation_speed:.2f} d/s", (200, 255, 220))
-             self.draw_text(panel_x, panel_y + 130, f"- Sub-Bodies:    {len(p.moons)} moons", (200, 255, 220))
+             
+             # Statistical properties mapped visually vertically across column bounds
+             self.draw_text(panel_x, panel_y + 30, f"Core Radius:  {p.radius:.2f} kM", (200, 255, 220))
+             self.draw_text(panel_x, panel_y + 48, f"Orbit Status: {p.orbit_distance:.2f} AU", (200, 255, 220))
+             self.draw_text(panel_x, panel_y + 66, f"Orbit Vel:    {p.orbit_speed:.2f} yr/s", (200, 255, 220))
+             self.draw_text(panel_x, panel_y + 84, f"Rotation Vel: {p.rotation_speed:.2f} d/s", (200, 255, 220))
+             self.draw_text(panel_x, panel_y + 102, f"Sub-Bodies:   {len(p.moons)} known satellites", (200, 255, 220))
+
+             # Educational Descriptions injection rendering 
+             self.draw_text(panel_x, panel_y + 130, f"--- Profile Data ---", (150, 180, 255))
+             p_desc_y = panel_y + 150
+             for line in p.description:
+                 self.draw_text(panel_x, p_desc_y, f"• {line}", (220, 230, 255)) 
+                 p_desc_y += 18
 
         glDisable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)

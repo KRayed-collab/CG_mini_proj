@@ -5,7 +5,7 @@ import random
 from textures import create_basic_texture, create_earth_texture
 
 class Planet:
-    def __init__(self, name, radius, orbit_distance, orbit_speed, rotation_speed, color, parent=None):
+    def __init__(self, name, radius, orbit_distance, orbit_speed, rotation_speed, color, parent=None, description=None):
         self.name = name
         self.radius = radius
         self.orbit_distance = orbit_distance
@@ -14,6 +14,9 @@ class Planet:
         self.color = color
         self.parent = parent
         self.moons = []
+        
+        # Default fallback string if no educational string injected
+        self.description = description if description else ["Data missing..."]
         
         self.current_orbit_angle = random.uniform(0, 360)
         self.current_rotation_angle = 0.0
@@ -30,7 +33,6 @@ class Planet:
         self.moons.append(moon)
         
     def generate_texture(self):
-        # Specific procedure mapping for Earth texture
         if self.name.lower() == "earth":
             self.texture_id = create_earth_texture()
         elif self.name.lower() == "sun":
@@ -51,16 +53,24 @@ class Planet:
         z = parent_pos[2] - self.orbit_distance * math.sin(rad)
         return (x, 0, z)
 
-    def draw_orbit_path(self):
+    def draw_orbit_path(self, active_selection=None):
         """ Render orbital route loops mapping raster structures """
         if self.orbit_distance == 0: return
         glDisable(GL_LIGHTING)
         glDisable(GL_TEXTURE_2D)
         
-        if self.name.lower() == "earth":
-             glColor3f(0.2, 0.35, 0.6)  # Distinct blue-ish trail for earth
+        # Extensively highlight specific tracks when object acts as current target
+        is_selected = (self == active_selection)
+        
+        if is_selected:
+            glLineWidth(3.5) # Emphasize target orbital geometry 
+            glColor3f(1.0, 0.9, 0.4) # Bright golden trail
         else:
-             glColor3f(0.25, 0.25, 0.25)
+            glLineWidth(1.0)
+            if self.name.lower() == "earth":
+                 glColor3f(0.2, 0.35, 0.6)
+            else:
+                 glColor3f(0.2, 0.2, 0.2)
              
         glBegin(GL_LINE_LOOP)
         segments = 64
@@ -70,11 +80,12 @@ class Planet:
             z = -self.orbit_distance * math.sin(theta)
             glVertex3f(x, 0, z)
         glEnd()
+        
+        glLineWidth(1.0) # Restorations
 
-    def draw(self, show_orbits, lighting_enabled):
+    def draw(self, show_orbits, lighting_enabled, active_selection=None):
         glPushMatrix()
         
-        # Build Illuminance Reaction configuration
         ambient = [self.color[0]*0.2, self.color[1]*0.2, self.color[2]*0.2, 1.0]
         diffuse = [self.color[0], self.color[1], self.color[2], 1.0]
         specular = [0.1, 0.1, 0.1, 1.0]
@@ -85,7 +96,7 @@ class Planet:
         glMaterialf(GL_FRONT, GL_SHININESS, 10.0)
         
         if show_orbits and self.parent is not None:
-             self.draw_orbit_path()
+             self.draw_orbit_path(active_selection)
 
         if lighting_enabled: glEnable(GL_LIGHTING)
         
@@ -125,8 +136,8 @@ class Planet:
         glPopMatrix()
         glDisable(GL_TEXTURE_2D)
         
-        # Iterate nested celestial nodes recursively
+        # Pass recursive drawing elements into inner body matrixes propagating Context target
         for moon in self.moons:
-            moon.draw(show_orbits, lighting_enabled)
+            moon.draw(show_orbits, lighting_enabled, active_selection)
             
         glPopMatrix()
