@@ -11,11 +11,12 @@ from math_utils import unproject_mouse, ray_sphere_intersect, ray_plane_intersec
 class SolarSystemApp:
     def __init__(self):
         pygame.init()
-        self.display = (1024, 768)
+        info = pygame.display.Info()
+        self.display = (info.current_w, info.current_h)
         pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLEBUFFERS, 1)
         pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLESAMPLES, 4)
         
-        self.screen = pygame.display.set_mode(self.display, DOUBLEBUF | OPENGL)
+        self.screen = pygame.display.set_mode(self.display, DOUBLEBUF | OPENGL | FULLSCREEN)
         pygame.display.set_caption("Extended 3D Solar System (Multi-module refactored)")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("Consolas", 15)
@@ -246,7 +247,9 @@ class SolarSystemApp:
                             self.camera.pitch = max(-89, min(89, self.camera.pitch))
 
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
+                    if event.key == pygame.K_ESCAPE:
+                        self.is_running = False
+                    elif event.key == pygame.K_SPACE:
                         self.is_paused = not self.is_paused
                     elif event.key == pygame.K_UP:
                         self.sim_speed += 0.5
@@ -272,12 +275,12 @@ class SolarSystemApp:
                             self.camera.target_distance = max(15, self.selected_planet.radius * 9)
                     elif event.key == pygame.K_m:
                         # Secondary cycling exclusively to swap through moons of the contextual target
-                        if self.selected_planet and self.selected_planet.parent in self.major_planets:
+                        if self.selected_planet and self.selected_planet.parent in self.major_planets and self.selected_planet.parent != self.sun:
                             siblings = self.selected_planet.parent.moons
                             idx = siblings.index(self.selected_planet)
                             self.selected_planet = siblings[(idx+1) % len(siblings)]
                             self.camera.target_distance = max(15, self.selected_planet.radius * 9)
-                        elif self.selected_planet and len(self.selected_planet.moons) > 0:
+                        elif self.selected_planet and len(self.selected_planet.moons) > 0 and self.selected_planet != self.sun:
                             # Contextual root holds moons; drop down into children
                             self.selected_planet = self.selected_planet.moons[0]
                             self.camera.target_distance = max(15, self.selected_planet.radius * 9)
@@ -339,7 +342,7 @@ class SolarSystemApp:
         
         self.draw_text(15, 15, "Controls: Mouse Drag=Rotate Camera | Scroll=Zoom", (200, 200, 200))
         self.draw_text(15, 35, "Select: Click Body | [TAB] Cycle Planets | [M] Cycle Moons", (200, 200, 200))
-        self.draw_text(15, 55, "Toggles: [P]rojection | [L]ighting | [O]rbits | [SPACE] Pause", (200, 200, 200))
+        self.draw_text(15, 55, "Toggles: [P]rojection | [L]ighting | [O]rbits | [SPACE] Pause | [ESC] Exit", (200, 200, 200))
         
         self.draw_text(15, 90, f"Mode: {'Orthographic' if self.orthographic_mode else 'Perspective'}", (255, 230, 200))
         self.draw_text(15, 110, f"Speed: {self.sim_speed}x {'(PAUSED)' if self.is_paused else ''}", (255, 230, 200))
@@ -348,8 +351,8 @@ class SolarSystemApp:
         # Draw explicit, highly detailed Planet Information Panel
         if self.selected_planet:
              # Widened bounds adapting formatting naturally around heavier descriptive texts mapped to parameters
-             panel_w_offset = 380
-             panel_h_offset = 240
+             panel_w_offset = 700
+             panel_h_offset = 260
              panel_x = w - panel_w_offset
              panel_y = h - panel_h_offset
              

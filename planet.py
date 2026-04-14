@@ -103,6 +103,7 @@ class Planet:
         # 1. Transformational Depth offseting (Composite positioning)
         glRotatef(self.current_orbit_angle, 0, 1, 0)
         glTranslatef(self.orbit_distance, 0, 0)
+        glRotatef(-self.current_orbit_angle, 0, 1, 0)
         
         glPushMatrix()
         
