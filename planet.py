@@ -2,7 +2,8 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import math
 import random
-from textures import create_basic_texture, create_earth_texture
+import os
+from textures import load_image_texture
 
 class Planet:
     def __init__(self, name, radius, orbit_distance, orbit_speed, rotation_speed, color, parent=None, description=None):
@@ -33,12 +34,15 @@ class Planet:
         self.moons.append(moon)
         
     def generate_texture(self):
-        if self.name.lower() == "earth":
-            self.texture_id = create_earth_texture()
-        elif self.name.lower() == "sun":
-             self.texture_id = create_basic_texture(self.color, variance=5)
+        filename_root = f"{self.name.lower()}.jpg"
+        filename_textures = os.path.join("Textures", f"{self.name.lower()}.jpg")
+        
+        if os.path.exists(filename_textures):
+            self.texture_id = load_image_texture(filename_textures)
+        elif os.path.exists(filename_root):
+            self.texture_id = load_image_texture(filename_root)
         else:
-             self.texture_id = create_basic_texture(self.color)
+            self.texture_id = None
         
     def get_world_position(self):
         """ Calculate absolute rendering context coordinate mappings. """
